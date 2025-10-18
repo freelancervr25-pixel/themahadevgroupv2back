@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/proxy.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/mahadev/(.*)",
+      "dest": "/api/proxy"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/proxy"
+    }
+  ]
+}

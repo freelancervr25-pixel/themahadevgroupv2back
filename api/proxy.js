@@ -2,6 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
+import https from "https";
 
 dotenv.config();
 const app = express();
@@ -10,6 +11,11 @@ app.use(cors());
 
 const BACKEND_URL = "https://simplysales.postick.co.in/mahadev";
 const PROXY_SECRET = process.env.PROXY_SECRET || "changeme";
+
+// Create HTTPS agent for development to handle TLS issues
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: process.env.NODE_ENV === "production",
+});
 
 // All requests starting with /api/mahadev will be proxied
 app.all("/api/mahadev/*", async (req, res) => {
@@ -23,7 +29,10 @@ app.all("/api/mahadev/*", async (req, res) => {
         ...req.headers,
         "x-proxy-auth": PROXY_SECRET,
       },
-      body: ["GET", "HEAD"].includes(req.method) ? undefined : JSON.stringify(req.body),
+      body: ["GET", "HEAD"].includes(req.method)
+        ? undefined
+        : JSON.stringify(req.body),
+      agent: httpsAgent,
     });
 
     const text = await backendRes.text();
