@@ -6,10 +6,33 @@ import https from "https";
 
 dotenv.config();
 const app = express();
-app.use(express.json());
-app.use(cors());
 
-const BACKEND_URL = "https://simplysales.postick.co.in/mahadev";
+// Configure CORS to allow your frontend
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',  // Vite default port
+    'http://localhost:3000',  // React default port
+    'http://localhost:8080',  // Vue default port
+    'https://themahadevgroupv2back.vercel.app'  // Your Vercel domain
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-proxy-auth']
+};
+
+app.use(cors(corsOptions));
+app.use(express.json());
+
+// Handle preflight OPTIONS requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-proxy-auth');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
+
+const BACKEND_URL = "https://simplysales.postick.co.in/mahadev/home_products";
 const PROXY_SECRET = process.env.PROXY_SECRET || "changeme";
 
 // Create HTTPS agent for development to handle TLS issues
@@ -20,7 +43,8 @@ const httpsAgent = new https.Agent({
 // Handle all requests - Vercel will route /api/mahadev/* to this function
 app.all("*", async (req, res) => {
   try {
-    // Extract the path after /api/mahadev
+    // For home_products endpoint, we'll use the full URL directly
+    // Extract any additional path after /api/mahadev
     const path = req.originalUrl.replace(/^\/api\/mahadev/, "");
     const url = BACKEND_URL + path;
 
@@ -39,6 +63,13 @@ app.all("*", async (req, res) => {
     });
 
     const text = await backendRes.text();
+    
+    // Set CORS headers for the response
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-proxy-auth');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     res.status(backendRes.status).send(text);
   } catch (err) {
     console.error("Proxy error:", err);
