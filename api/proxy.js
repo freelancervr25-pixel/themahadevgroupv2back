@@ -35,7 +35,7 @@ app.options("*", (req, res) => {
   res.status(200).end();
 });
 
-const BACKEND_URL = "https://simplysales.postick.co.in/mahadev/home_products";
+const BACKEND_URL = "https://simplysales.postick.co.in/mahadev/";
 const PROXY_SECRET = process.env.PROXY_SECRET || "changeme";
 
 // Create HTTPS agent for development to handle TLS issues
