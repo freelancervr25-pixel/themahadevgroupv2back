@@ -89,5 +89,10 @@ app.post("/api/mahadev/*", async (req, res) => {
   }
 });
 
-// For Vercel serverless functions
+// For Render deployment - start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+});
+
 export default app;
