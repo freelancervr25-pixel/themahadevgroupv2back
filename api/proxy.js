@@ -17,11 +17,14 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: process.env.NODE_ENV === "production",
 });
 
-// All requests starting with /api/mahadev will be proxied
-app.all("/api/mahadev/*", async (req, res) => {
+// Handle all requests - Vercel will route /api/mahadev/* to this function
+app.all("*", async (req, res) => {
   try {
+    // Extract the path after /api/mahadev
     const path = req.originalUrl.replace(/^\/api\/mahadev/, "");
     const url = BACKEND_URL + path;
+
+    console.log(`Proxying ${req.method} ${req.originalUrl} to ${url}`);
 
     const backendRes = await fetch(url, {
       method: req.method,
@@ -38,8 +41,8 @@ app.all("/api/mahadev/*", async (req, res) => {
     const text = await backendRes.text();
     res.status(backendRes.status).send(text);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Proxy failed" });
+    console.error("Proxy error:", err);
+    res.status(500).json({ error: "Proxy failed", details: err.message });
   }
 });
 
