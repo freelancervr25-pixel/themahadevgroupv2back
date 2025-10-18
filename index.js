@@ -33,6 +33,15 @@ app.get("/api", (req, res) => {
   });
 });
 
+// Test proxy endpoint (for debugging)
+app.get("/test-proxy", (req, res) => {
+  res.json({
+    message: "Proxy test endpoint",
+    note: "Use /api/mahadev/* for actual proxy requests",
+    example: "/api/mahadev/home_products",
+  });
+});
+
 // For local development
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;

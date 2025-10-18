@@ -10,25 +10,28 @@ const app = express();
 // Configure CORS to allow your frontend
 const corsOptions = {
   origin: [
-    'http://localhost:5173',  // Vite default port
-    'http://localhost:3000',  // React default port
-    'http://localhost:8080',  // Vue default port
-    'https://themahadevgroupv2back.vercel.app'  // Your Vercel domain
+    "http://localhost:5173", // Vite default port
+    "http://localhost:3000", // React default port
+    "http://localhost:8080", // Vue default port
+    "https://themahadevgroupv2back.vercel.app", // Your Vercel domain
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-proxy-auth']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-proxy-auth"],
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
 
 // Handle preflight OPTIONS requests
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-proxy-auth');
-  res.header('Access-Control-Allow-Credentials', 'true');
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, x-proxy-auth"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
   res.status(200).end();
 });
 
@@ -63,13 +66,19 @@ app.all("*", async (req, res) => {
     });
 
     const text = await backendRes.text();
-    
+
     // Set CORS headers for the response
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-proxy-auth');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    
+    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS"
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, x-proxy-auth"
+    );
+    res.header("Access-Control-Allow-Credentials", "true");
+
     res.status(backendRes.status).send(text);
   } catch (err) {
     console.error("Proxy error:", err);
