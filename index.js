@@ -5,6 +5,14 @@ const app = express();
 
 // Manual CORS middleware - set headers for ALL requests
 app.use((req, res, next) => {
+  // Log all incoming requests
+  console.log(`\n=== INCOMING REQUEST ===`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Headers:`, req.headers);
+  console.log(`Body:`, req.body);
+  console.log(`========================\n`);
+
   // Set CORS headers for all responses
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -14,11 +22,7 @@ app.use((req, res, next) => {
   );
   res.header("Access-Control-Max-Age", "86400"); // 24 hours
 
-  // Handle preflight OPTIONS requests
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
+  // Handle preflight OPTIONS requests for specific endpoints
 
   next();
 });
@@ -26,10 +30,14 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // Specific OPTIONS handler for home_products endpoint
-app.options('/api/mahadev/home_products', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+app.options("/api/mahadev/home_products", (req, res) => {
+  console.log(`\n=== OPTIONS REQUEST HANDLED ===`);
+  console.log(`Endpoint: /api/mahadev/home_products`);
+  console.log(`===============================\n`);
+  
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.sendStatus(200);
 });
 
@@ -42,7 +50,11 @@ app.post("/api/mahadev/*", async (req, res) => {
     // Forward to your backend
     const backendUrl = `https://simplysales.postick.co.in/mahadev${path}`;
 
-    console.log(`Proxying POST ${req.originalUrl} to ${backendUrl}`);
+    console.log(`\n=== PROXY REQUEST ===`);
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Backend URL: ${backendUrl}`);
+    console.log(`Request Body:`, req.body);
+    console.log(`====================\n`);
 
     const response = await fetch(backendUrl, {
       method: "POST",
@@ -55,10 +67,19 @@ app.post("/api/mahadev/*", async (req, res) => {
 
     const data = await response.text();
 
+    console.log(`\n=== BACKEND RESPONSE ===`);
+    console.log(`Status: ${response.status}`);
+    console.log(`Headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`Response Body:`, data);
+    console.log(`========================\n`);
+
     // Forward the response
     res.status(response.status).send(data);
   } catch (error) {
-    console.error("Proxy error:", error);
+    console.error(`\n=== PROXY ERROR ===`);
+    console.error(`Error:`, error);
+    console.error(`Message:`, error.message);
+    console.error(`===================\n`);
 
     res.status(500).json({
       error: "Proxy failed",
