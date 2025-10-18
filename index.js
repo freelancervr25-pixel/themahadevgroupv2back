@@ -8,28 +8,25 @@ import https from "https";
 dotenv.config();
 const app = express();
 
-// Configure CORS to allow all origins
-const corsOptions = {
-  origin: "*", // Allow all origins
-  credentials: false, // Must be false when origin is *
-  methods: ["POST", "OPTIONS"], // Only POST requests
-  allowedHeaders: ["Content-Type", "Authorization", "x-proxy-auth"],
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Handle preflight OPTIONS requests
-app.options("*", (req, res) => {
+// Manual CORS handling for maximum compatibility
+app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-proxy-auth"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-proxy-auth"
   );
   res.header("Access-Control-Allow-Credentials", "false");
-  res.status(200).end();
+
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
+
+  next();
 });
+
+app.use(express.json());
 
 const BACKEND_URL = "https://simplysales.postick.co.in/mahadev/";
 const PROXY_SECRET = process.env.PROXY_SECRET || "changeme";
@@ -56,7 +53,8 @@ app.get("/api", (req, res) => {
   res.json({
     name: "Mahadev Group API Proxy",
     version: "1.0.0",
-    description: "Express proxy server for Mahadev Group API - POST requests only",
+    description:
+      "Express proxy server for Mahadev Group API - POST requests only",
     endpoints: {
       proxy: "/api/mahadev/* - Proxies POST requests to backend",
       health: "/ - Health check",
@@ -72,6 +70,11 @@ app.get("/test-proxy", (req, res) => {
     note: "Use /api/mahadev/* for actual proxy requests",
     example: "/api/mahadev/home_products",
   });
+});
+
+// Handle OPTIONS for proxy route
+app.options("/api/mahadev/*", (req, res) => {
+  res.status(200).end();
 });
 
 // MAIN PROXY LOGIC - Handle only POST requests for /api/mahadev/*
@@ -96,16 +99,6 @@ app.post("/api/mahadev/*", async (req, res) => {
     });
 
     const text = await backendRes.text();
-
-    // Set CORS headers for the response
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, x-proxy-auth"
-    );
-    res.header("Access-Control-Allow-Credentials", "false");
-
     res.status(backendRes.status).send(text);
   } catch (err) {
     console.error("Proxy error:", err);
