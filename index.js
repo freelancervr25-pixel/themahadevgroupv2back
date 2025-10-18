@@ -22,23 +22,24 @@ app.use((req, res, next) => {
   );
   res.header("Access-Control-Max-Age", "86400"); // 24 hours
 
-  // Handle preflight OPTIONS requests for specific endpoints
+  // Handle preflight OPTIONS requests
+  if (req.method === "OPTIONS") {
+    res.status(200).end();
+    return;
+  }
 
   next();
 });
 
 app.use(express.json());
 
-// Specific OPTIONS handler for home_products endpoint
-app.options("/api/mahadev/home_products", (req, res) => {
-  console.log(`\n=== OPTIONS REQUEST HANDLED ===`);
-  console.log(`Endpoint: /api/mahadev/home_products`);
-  console.log(`===============================\n`);
-
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.sendStatus(200);
+// Health check
+app.get("/", (req, res) => {
+  res.json({
+    message: "Simple Proxy Server",
+    status: "running",
+    endpoint: "/api/mahadev/*",
+  });
 });
 
 // Simple proxy endpoint
@@ -88,21 +89,5 @@ app.post("/api/mahadev/*", async (req, res) => {
   }
 });
 
-// Health check
-app.get("/", (req, res) => {
-  res.json({
-    message: "Simple Proxy Server",
-    status: "running",
-    endpoint: "/api/mahadev/*",
-  });
-});
-
-// For local development
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Proxy server running on port ${PORT}`);
-  });
-}
-
+// For Vercel serverless functions
 export default app;
