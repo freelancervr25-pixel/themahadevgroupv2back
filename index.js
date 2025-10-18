@@ -12,7 +12,7 @@ const app = express();
 const corsOptions = {
   origin: "*", // Allow all origins
   credentials: false, // Must be false when origin is *
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["POST", "OPTIONS"], // Only POST requests
   allowedHeaders: ["Content-Type", "Authorization", "x-proxy-auth"],
 };
 
@@ -22,7 +22,7 @@ app.use(express.json());
 // Handle preflight OPTIONS requests
 app.options("*", (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, x-proxy-auth"
@@ -56,11 +56,12 @@ app.get("/api", (req, res) => {
   res.json({
     name: "Mahadev Group API Proxy",
     version: "1.0.0",
-    description: "Express proxy server for Mahadev Group API",
+    description: "Express proxy server for Mahadev Group API - POST requests only",
     endpoints: {
-      proxy: "/api/mahadev/* - Proxies requests to backend",
+      proxy: "/api/mahadev/* - Proxies POST requests to backend",
       health: "/ - Health check",
     },
+    methods: ["POST"],
   });
 });
 
@@ -73,8 +74,8 @@ app.get("/test-proxy", (req, res) => {
   });
 });
 
-// MAIN PROXY LOGIC - Handle all /api/mahadev/* requests
-app.all("/api/mahadev/*", async (req, res) => {
+// MAIN PROXY LOGIC - Handle only POST requests for /api/mahadev/*
+app.post("/api/mahadev/*", async (req, res) => {
   try {
     // Extract the path after /api/mahadev
     const path = req.originalUrl.replace(/^\/api\/mahadev/, "");
@@ -98,10 +99,7 @@ app.all("/api/mahadev/*", async (req, res) => {
 
     // Set CORS headers for the response
     res.header("Access-Control-Allow-Origin", "*");
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
+    res.header("Access-Control-Allow-Methods", "POST, OPTIONS");
     res.header(
       "Access-Control-Allow-Headers",
       "Content-Type, Authorization, x-proxy-auth"
