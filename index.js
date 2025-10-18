@@ -34,7 +34,7 @@ app.options("/api/mahadev/home_products", (req, res) => {
   console.log(`\n=== OPTIONS REQUEST HANDLED ===`);
   console.log(`Endpoint: /api/mahadev/home_products`);
   console.log(`===============================\n`);
-  
+
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");

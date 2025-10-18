@@ -1,102 +1,100 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";
-import dotenv from "dotenv";
-import https from "https";
 
-dotenv.config();
 const app = express();
 
-// Configure CORS to allow your frontend
-const corsOptions = {
-  origin: [
-    "http://localhost:5173", // Vite default port
-    "http://localhost:3000", // React default port
-    "http://localhost:8080", // Vue default port
-    "https://themahadevgroupv2back.vercel.app", // Your Vercel domain
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "x-proxy-auth"],
-};
+// Manual CORS middleware - set headers for ALL requests
+app.use((req, res, next) => {
+  // Log all incoming requests
+  console.log(`\n=== INCOMING REQUEST ===`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Headers:`, req.headers);
+  console.log(`Body:`, req.body);
+  console.log(`========================\n`);
 
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Handle preflight OPTIONS requests
-app.options("*", (req, res) => {
-  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  // Set CORS headers for all responses
+  res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, x-proxy-auth"
+    "Content-Type, Authorization, x-proxy-auth, X-Requested-With"
   );
-  res.header("Access-Control-Allow-Credentials", "true");
-  res.status(200).end();
+  res.header("Access-Control-Max-Age", "86400"); // 24 hours
+
+  // Handle preflight OPTIONS requests for specific endpoints
+
+  next();
 });
 
-const BACKEND_URL = "https://simplysales.postick.co.in/mahadev/";
-const PROXY_SECRET = process.env.PROXY_SECRET || "changeme";
+app.use(express.json());
 
-// Create HTTPS agent for development to handle TLS issues
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: process.env.NODE_ENV === "production",
+// Specific OPTIONS handler for home_products endpoint
+app.options("/api/mahadev/home_products", (req, res) => {
+  console.log(`\n=== OPTIONS REQUEST HANDLED ===`);
+  console.log(`Endpoint: /api/mahadev/home_products`);
+  console.log(`===============================\n`);
+  
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.sendStatus(200);
 });
 
-// Handle all requests - Vercel will route /api/mahadev/* to this function
-app.all("*", async (req, res) => {
+// Simple proxy endpoint
+app.post("/api/mahadev/*", async (req, res) => {
   try {
-    // For home_products endpoint, we'll use the full URL directly
-    // Extract any additional path after /api/mahadev
+    // Extract the path after /api/mahadev
     const path = req.originalUrl.replace(/^\/api\/mahadev/, "");
-    const url = BACKEND_URL + path;
 
-    console.log(`Proxying ${req.method} ${req.originalUrl} to ${url}`);
+    // Forward to your backend
+    const backendUrl = `https://simplysales.postick.co.in/mahadev${path}`;
 
-    const backendRes = await fetch(url, {
-      method: req.method,
+    console.log(`\n=== PROXY REQUEST ===`);
+    console.log(`Original URL: ${req.originalUrl}`);
+    console.log(`Backend URL: ${backendUrl}`);
+    console.log(`Request Body:`, req.body);
+    console.log(`====================\n`);
+
+    const response = await fetch(backendUrl, {
+      method: "POST",
       headers: {
-        ...req.headers,
-        "x-proxy-auth": PROXY_SECRET,
+        "Content-Type": "application/json",
+        "x-proxy-auth": "supersecret123", // Add your auth header
       },
-      body: ["GET", "HEAD"].includes(req.method)
-        ? undefined
-        : JSON.stringify(req.body),
-      agent: httpsAgent,
+      body: JSON.stringify(req.body),
     });
 
-    const text = await backendRes.text();
+    const data = await response.text();
 
-    // Set CORS headers for the response
-    res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, x-proxy-auth"
-    );
-    res.header("Access-Control-Allow-Credentials", "true");
+    console.log(`\n=== BACKEND RESPONSE ===`);
+    console.log(`Status: ${response.status}`);
+    console.log(`Headers:`, Object.fromEntries(response.headers.entries()));
+    console.log(`Response Body:`, data);
+    console.log(`========================\n`);
 
-    res.status(backendRes.status).send(text);
-  } catch (err) {
-    console.error("Proxy error:", err);
-    res.status(500).json({ error: "Proxy failed", details: err.message });
+    // Forward the response
+    res.status(response.status).send(data);
+  } catch (error) {
+    console.error(`\n=== PROXY ERROR ===`);
+    console.error(`Error:`, error);
+    console.error(`Message:`, error.message);
+    console.error(`===================\n`);
+
+    res.status(500).json({
+      error: "Proxy failed",
+      message: error.message,
+    });
   }
 });
 
-// Health check endpoint
+// Health check
 app.get("/", (req, res) => {
-  res.json({ message: "Express proxy server is running!" });
-});
-
-// For local development
-if (process.env.NODE_ENV !== "production") {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Proxy server running on port ${PORT}`);
+  res.json({
+    message: "Simple Proxy Server",
+    status: "running",
+    endpoint: "/api/mahadev/*",
   });
-}
+});
 
 export default app;
